@@ -1,0 +1,26 @@
+# SmartQueue — Eclipse Dynamic Web Project
+# .gitignore
+
+# Eclipse build output
+/build/
+/.metadata/
+*.class
+
+# Eclipse temp files
+*.swp
+*~
+.DS_Store
+
+# IntelliJ / VS Code (if opened elsewhere)
+.idea/
+*.iml
+.vscode/
+
+# Tomcat work directory (created at runtime)
+/work/
+
+# NOTE: WebContent/WEB-INF/lib/ is intentionally tracked
+# so that reviewers can see the jar requirement.
+# If you commit the mysql-connector-j.jar, it will be tracked.
+# To EXCLUDE it (and keep lib/ empty), uncomment the line below:
+# /WebContent/WEB-INF/lib/*.jar

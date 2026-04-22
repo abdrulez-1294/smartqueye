@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<org.eclipse.wst.common.modulecore:ProjectModules xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:org.eclipse.wst.common.modulecore="modulecore.xmi">
+  <modules>
+    <wb-modules deployName="SmartQueue">
+      <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
+      <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
+      <property name="context-root" value="SmartQueue"/>
+      <property name="java-output-path" value="/build/classes"/>
+    </wb-modules>
+  </modules>
+</org.eclipse.wst.common.modulecore:ProjectModules>

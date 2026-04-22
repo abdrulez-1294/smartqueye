@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+         https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>SmartQueue</display-name>
+
+    <!-- Default welcome file -->
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+    <!-- Session timeout: 30 minutes -->
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+
+    <!--
+        NOTE: Servlet mappings are handled via @WebServlet annotations
+        in each Servlet class, so no manual servlet entries are needed here.
+        This file is kept minimal for Eclipse Dynamic Web Project compatibility.
+    -->
+
+</web-app>
