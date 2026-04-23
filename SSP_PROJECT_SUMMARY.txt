@@ -1,0 +1,300 @@
+================================================================================
+         SmartQueue — Server-Side Programming (SSP) Project Summary
+                      Academic Project Documentation
+================================================================================
+
+PROJECT NAME   : SmartQueue – Automatic Billing & Self-Checkout Ecosystem
+TECHNOLOGY     : Java EE (Jakarta EE), Apache Tomcat 10.1, MySQL 8.0, JDBC
+IDE            : Eclipse IDE for Enterprise Java and Web Developers
+SUBMITTED BY   : [Your Name]
+COURSE         : Server-Side Programming (SSP)
+
+================================================================================
+                         WHAT IS SmartQueue?
+================================================================================
+
+SmartQueue is a web-based simulation of a modern retail self-checkout system.
+It eliminates physical queues by letting customers scan items on a web app
+(Scan & Go), then verify their bag at an automated kiosk before exiting.
+
+The project is built entirely using Java EE SSP technologies and runs on
+Apache Tomcat — no Node.js, no React, no external frameworks in the backend.
+
+================================================================================
+                    SSP CONCEPTS USED IN THIS PROJECT
+================================================================================
+
+------------------------------------------------------------------------
+1. JAVA SERVLETS (Core SSP Technology)
+------------------------------------------------------------------------
+What it is:
+  A Servlet is a Java class that handles HTTP requests and responses on the
+  server side. It is the backbone of Java EE web applications.
+
+How we used it:
+  We created 4 Servlets, each handling a specific part of the application:
+
+  a) AuthServlet.java   — Mapped to /login, /logout, /register
+     - Handles POST login: validates email+password, creates HttpSession
+     - Handles GET logout: invalidates the session
+     - Handles POST register: inserts new user into MySQL database
+
+  b) CartServlet.java   — Mapped to /cart
+     - action=scan     : looks up product by barcode, adds to session cart
+     - action=remove   : removes a specific item from the cart
+     - action=clear    : empties the entire session cart
+     - action=checkout : saves cart to database, redirects to invoice page
+
+  c) AdminServlet.java  — Mapped to /admin
+     - action=add      : inserts a new product into the database
+     - action=update   : updates an existing product's details
+     - action=delete   : deletes a product by ID
+     - Includes role-based access control (only admin users allowed)
+
+  d) KioskServlet.java  — Mapped to /kiosk
+     - action=lookup   : finds user by phone number for kiosk login
+     - action=verify   : executes Weight Verification logic (core SSP feature)
+
+SSP Concept Demonstrated: Request handling (doGet/doPost), URL mapping
+via @WebServlet annotation, request parameters (getParameter), forwarding
+(RequestDispatcher.forward) and redirecting (sendRedirect).
+
+------------------------------------------------------------------------
+2. JSP — JavaServer Pages (Dynamic View Generation)
+------------------------------------------------------------------------
+What it is:
+  JSP allows embedding Java code inside HTML pages. The server processes
+  the JSP and sends plain HTML to the browser. It is the "View" in MVC.
+
+How we used it:
+  We created 5 JSP pages:
+
+  a) index.jsp    — Login and Registration page (dual-tab form)
+  b) shop.jsp     — Scan & Go interface: shows products, manages cart display
+  c) invoice.jsp  — Digital receipt with dynamic QR code after checkout
+  d) kiosk.jsp    — Kiosk terminal with 4 states: Phone → Cart → Verify → Success
+  e) admin.jsp    — Admin dashboard with product table, stats cards, modals
+
+SSP Concepts Demonstrated:
+  - Scriptlets (<% ... %>) for Java logic inside HTML
+  - Expressions (<%= ... %>) for outputting dynamic values
+  - Implicit objects: request, response, session, out
+  - Conditional rendering (if/else blocks in JSP)
+  - Looping with Java for-each to generate product tables/lists
+  - Page directives (<%@ page import="..." %>)
+
+------------------------------------------------------------------------
+3. HTTP SESSION MANAGEMENT (HttpSession)
+------------------------------------------------------------------------
+What it is:
+  HTTP is stateless — every request is independent. HttpSession lets the
+  server remember data about a specific user across multiple requests.
+
+How we used it:
+  - session.setAttribute("loggedInUser", user)  → stores logged-in user
+  - session.getAttribute("cart")                → retrieves the cart list
+  - session.setAttribute("cart", cartList)      → saves updated cart
+  - session.setAttribute("lastTransactionId", id) → for kiosk sync
+  - session.invalidate()                        → clears all data on logout
+  - session.setMaxInactiveInterval(1800)        → 30-minute auto-timeout
+
+SSP Concept Demonstrated:
+  Full stateful web application using server-side session tracking.
+  The shopping cart lives entirely in the server's HttpSession — no
+  cookies, no localStorage, pure SSP session management.
+
+------------------------------------------------------------------------
+4. JDBC — Java Database Connectivity
+------------------------------------------------------------------------
+What it is:
+  JDBC is the standard Java API for connecting to relational databases.
+  It lets Java code execute SQL queries and process results.
+
+How we used it:
+  DBUtil.java — Central connection manager
+    - Loads the MySQL driver using Class.forName()
+    - Returns a new Connection via DriverManager.getConnection()
+    - Provides a null-safe close() method
+
+  We used 3 types of JDBC statements:
+    - Statement           : for simple SELECT * queries (getAllProducts)
+    - PreparedStatement   : for all INSERT/UPDATE/DELETE (prevents SQL injection)
+    - Batch execution     : in TransactionDAO, we used addBatch()/executeBatch()
+                           to insert all cart items in one efficient database call
+
+  We also used:
+    - ResultSet           : to iterate over rows returned by SELECT queries
+    - getGeneratedKeys()  : to retrieve auto-generated transaction IDs
+    - con.setAutoCommit(false) / con.commit() / con.rollback()
+                          : for atomic transaction handling during checkout
+
+SSP Concept Demonstrated:
+  Full CRUD (Create, Read, Update, Delete) operations using JDBC with
+  MySQL. Prepared statements, batch inserts, and transaction management.
+
+------------------------------------------------------------------------
+5. MVC ARCHITECTURE (Model-View-Controller)
+------------------------------------------------------------------------
+What it is:
+  MVC separates the application into 3 layers:
+    Model      — Data and business logic
+    View       — What the user sees (JSP)
+    Controller — Handles requests and connects Model to View (Servlet)
+
+How we structured it:
+
+  MODEL layer (src/com/smartqueue/model/)
+    - User.java       : Java Bean representing a customer/admin
+    - Product.java    : Java Bean representing a retail product
+    - CartItem.java   : Represents one line item in the cart
+
+  DATA ACCESS layer (src/com/smartqueue/dao/)
+    - UserDAO.java        : authenticate(), findByPhone(), register()
+    - ProductDAO.java     : getAllProducts(), findByBarcode(), add/update/delete
+    - TransactionDAO.java : saveTransaction(), markAsPaid(), getPendingTxId()
+
+  CONTROLLER layer (src/com/smartqueue/servlet/)
+    - AuthServlet.java, CartServlet.java, AdminServlet.java, KioskServlet.java
+
+  VIEW layer (WebContent/*.jsp)
+    - index.jsp, shop.jsp, invoice.jsp, kiosk.jsp, admin.jsp
+
+------------------------------------------------------------------------
+6. MySQL DATABASE DESIGN
+------------------------------------------------------------------------
+We designed 4 related database tables:
+
+  users
+    user_id (PK), full_name, email (UNIQUE), phone (UNIQUE),
+    password_hash, role (ENUM: customer/admin), created_at
+
+  products
+    product_id (PK), name, barcode (UNIQUE), price, expected_weight_grams,
+    stock_qty, category, image_url, created_at
+
+  transactions
+    transaction_id (PK), user_id (FK → users), total_amount,
+    payment_status (ENUM: PENDING/PAID/FAILED), created_at, paid_at
+
+  transaction_items
+    item_id (PK), transaction_id (FK), product_id (FK),
+    quantity, unit_price
+
+SSP Concept Demonstrated:
+  Relational database design with foreign keys, ENUM constraints,
+  indexing (barcode, user+status), and referential integrity.
+
+------------------------------------------------------------------------
+7. WEIGHT VERIFICATION LOGIC (Unique SSP Backend Feature)
+------------------------------------------------------------------------
+Location: KioskServlet.java → handleWeightVerification()
+
+This is the most unique backend feature of the project. When a customer
+places their bag on the kiosk scale:
+
+  Step 1: Server calculates expectedWeight
+          = Σ (product.expectedWeightGrams × quantity) for all cart items
+
+  Step 2: Customer inputs the actual weight shown on the scale
+
+  Step 3: Server computes:
+          difference = |actualWeight - expectedWeight|
+          verified   = (difference <= 50 grams)
+
+  Step 4a: If VERIFIED → TransactionDAO.markAsPaid(txId) is called
+           Session is cleared, "Gate Open" state shown to customer
+
+  Step 4b: If MISMATCH → Error shown with direction (heavier/lighter)
+           and exact gram difference — potential theft/scanning error
+
+SSP Concept Demonstrated:
+  Pure server-side business logic. All verification happens in Java,
+  nothing is done client-side. This demonstrates the value of SSP.
+
+------------------------------------------------------------------------
+8. ROLE-BASED ACCESS CONTROL
+------------------------------------------------------------------------
+  - AdminServlet checks session.getAttribute("role").equals("admin")
+    before executing any inventory operation
+  - If a non-admin tries to access /admin, they are redirected to login
+  - JSP pages check session.getAttribute("loggedInUser") != null
+    and redirect to index.jsp if the session is missing/expired
+  - Two roles: "customer" (Scan & Go access) and "admin" (full CRUD)
+
+------------------------------------------------------------------------
+9. FRONTEND (Bootstrap 5 + HTML5 + CSS3 + JavaScript)
+------------------------------------------------------------------------
+  - Bootstrap 5 CDN used for responsive grid, modals, tabs, alerts
+  - Custom CSS (style.css) with dark theme, glassmorphism cards,
+    animated gradient orbs, product tiles, kiosk numpad
+  - JavaScript used for:
+      * Password visibility toggle
+      * Auto-dismiss alerts after 4 seconds
+      * Barcode fill from product tile click
+      * Touchscreen numpad for kiosk phone input
+      * QR code generation (qrcodejs library)
+      * Confetti animation on successful checkout
+      * Live clock display on kiosk
+
+================================================================================
+                         DATABASE SEED CREDENTIALS
+================================================================================
+
+  ADMIN
+    Name     : Arjun Mehta
+    Email    : arjun@smartqueue.com
+    Password : admin@123
+
+  CUSTOMER 1
+    Name     : Rahul Sharma
+    Email    : rahul.sharma@gmail.com
+    Password : rahul@123
+    Phone    : 9876543210  (used at Kiosk)
+
+  CUSTOMER 2
+    Name     : Priya Patel
+    Email    : priya.patel@gmail.com
+    Password : priya@123
+    Phone    : 9123456789  (used at Kiosk)
+
+================================================================================
+                       HOW TO RUN THE PROJECT
+================================================================================
+
+  1. Open MySQL → Run smartqueue_schema.sql
+  2. Update password in DBUtil.java if not "root"
+  3. Eclipse → Import → Git → Clone → https://github.com/abdrulez-1294/smartqueye
+  4. Download mysql-connector-j.jar → paste into WebContent/WEB-INF/lib/
+  5. Right-click project → Run As → Run on Server → Tomcat 10.1
+  6. Browser → http://localhost:8080/SmartQueue/
+
+================================================================================
+                            GITHUB REPOSITORY
+================================================================================
+
+  URL : https://github.com/abdrulez-1294/smartqueye
+  Branch: main
+
+================================================================================
+                     SSP TECHNOLOGIES SUMMARY TABLE
+================================================================================
+
+  SSP Feature                  | Java Element Used
+  -----------------------------|------------------------------------------
+  Request Handling             | HttpServlet, doGet(), doPost()
+  URL Routing                  | @WebServlet annotation
+  Dynamic Page Generation      | JSP (JavaServer Pages)
+  Session Tracking             | HttpSession
+  Database Connectivity        | JDBC (DriverManager, PreparedStatement)
+  Transaction Management       | con.setAutoCommit, commit, rollback
+  MVC Pattern                  | Servlets (C) + JSP (V) + Models/DAO (M)
+  Role-Based Access Control    | session.getAttribute("role") checks
+  Request Forwarding           | RequestDispatcher.forward()
+  Response Redirect            | response.sendRedirect()
+  Form Data Processing         | request.getParameter()
+  Server-Side Business Logic   | Weight Verification in KioskServlet
+  Relational Database          | MySQL with FK constraints
+
+================================================================================
+                          END OF DOCUMENT
+================================================================================
