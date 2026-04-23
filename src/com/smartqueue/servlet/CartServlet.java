@@ -15,17 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * CartServlet.java — The core shopping cart controller for the "Scan & Go" interface.
+ * CartServlet.java — Core shopping cart controller for the Scan & Go interface.
  *
- * URL Mappings:
- *   POST /cart?action=scan       → Scan a barcode and add product to session cart
- *   POST /cart?action=remove     → Remove an item from the session cart
- *   POST /cart?action=checkout   → Save cart to DB and generate invoice/QR
- *   POST /cart?action=clear      → Clear all items from the session cart
+ * URL: POST /cart?action=scan|remove|checkout|clear
+ * Session key: "cart" stores List<CartItem>
  *
- * Session Key: "cart" — stores a List<CartItem>
- *
- * MVC Role: Controller
+ * FIX: Replaced switch expressions with if-else (Java 8+ compatible)
+ * FIX: handleClear now removes checkoutTotal from session
  */
 @WebServlet(name = "CartServlet", urlPatterns = {"/cart"})
 public class CartServlet extends HttpServlet {
@@ -40,9 +36,7 @@ public class CartServlet extends HttpServlet {
 
         req.setCharacterEncoding("UTF-8");
 
-        // -------------------------------------------------------
-        // Session Guard — redirect to login if not authenticated
-        // -------------------------------------------------------
+        // Session guard
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("loggedInUser") == null) {
             resp.sendRedirect(req.getContextPath() + "/index.jsp");
@@ -52,17 +46,22 @@ public class CartServlet extends HttpServlet {
         String action = req.getParameter("action");
         if (action == null) action = "";
 
-        switch (action) {
-            case "scan"     -> handleScan(req, resp, session);
-            case "remove"   -> handleRemove(req, resp, session);
-            case "checkout" -> handleCheckout(req, resp, session);
-            case "clear"    -> handleClear(req, resp, session);
-            default         -> resp.sendRedirect(req.getContextPath() + "/shop.jsp");
+        // FIX: if-else instead of switch expression for Java 8+ compatibility
+        if ("scan".equals(action)) {
+            handleScan(req, resp, session);
+        } else if ("remove".equals(action)) {
+            handleRemove(req, resp, session);
+        } else if ("checkout".equals(action)) {
+            handleCheckout(req, resp, session);
+        } else if ("clear".equals(action)) {
+            handleClear(req, resp, session);
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/shop.jsp");
         }
     }
 
     // -------------------------------------------------------
-    // Action: SCAN — Look up product by barcode, add to cart
+    // SCAN: Look up product by barcode, add to session cart
     // -------------------------------------------------------
     @SuppressWarnings("unchecked")
     private void handleScan(HttpServletRequest req, HttpServletResponse resp, HttpSession session)
@@ -70,35 +69,32 @@ public class CartServlet extends HttpServlet {
 
         String barcode = req.getParameter("barcode");
 
-        if (barcode == null || barcode.isBlank()) {
+        if (barcode == null || barcode.trim().isEmpty()) {
             req.setAttribute("scanError", "Please enter a valid barcode.");
             req.getRequestDispatcher("/shop.jsp").forward(req, resp);
             return;
         }
 
-        // Look up product in database
         Product product = productDAO.findByBarcode(barcode.trim());
 
         if (product == null) {
-            req.setAttribute("scanError", "Product not found for barcode: " + barcode);
+            req.setAttribute("scanError", "No product found for barcode: " + barcode.trim());
             req.getRequestDispatcher("/shop.jsp").forward(req, resp);
             return;
         }
 
-        // Check stock availability
         if (product.getStockQty() <= 0) {
-            req.setAttribute("scanError", "'" + product.getName() + "' is currently out of stock.");
+            req.setAttribute("scanError", "'" + product.getName() + "' is out of stock.");
             req.getRequestDispatcher("/shop.jsp").forward(req, resp);
             return;
         }
 
-        // Retrieve or create the cart from the session
         List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
         if (cart == null) {
-            cart = new ArrayList<>();
+            cart = new ArrayList<CartItem>();
         }
 
-        // Check if item already exists in cart — if so, increment quantity
+        // Increment quantity if already in cart, else add new entry
         boolean found = false;
         for (CartItem item : cart) {
             if (item.getProduct().getBarcode().equals(product.getBarcode())) {
@@ -107,22 +103,17 @@ public class CartServlet extends HttpServlet {
                 break;
             }
         }
-
         if (!found) {
-            // New item — add with quantity 1
             cart.add(new CartItem(product, 1));
         }
 
-        // Save the updated cart back to session
         session.setAttribute("cart", cart);
-
-        // Forward to shop with success message
         req.setAttribute("scanSuccess", "'" + product.getName() + "' added to cart!");
         req.getRequestDispatcher("/shop.jsp").forward(req, resp);
     }
 
     // -------------------------------------------------------
-    // Action: REMOVE — Remove a specific item from the cart
+    // REMOVE: Remove one item from cart by barcode
     // -------------------------------------------------------
     @SuppressWarnings("unchecked")
     private void handleRemove(HttpServletRequest req, HttpServletResponse resp, HttpSession session)
@@ -132,26 +123,32 @@ public class CartServlet extends HttpServlet {
         List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
 
         if (cart != null && barcodeToRemove != null) {
-            cart.removeIf(item -> item.getProduct().getBarcode().equals(barcodeToRemove));
-            session.setAttribute("cart", cart);
+            List<CartItem> updated = new ArrayList<CartItem>();
+            for (CartItem item : cart) {
+                if (!item.getProduct().getBarcode().equals(barcodeToRemove)) {
+                    updated.add(item);
+                }
+            }
+            session.setAttribute("cart", updated);
         }
 
         resp.sendRedirect(req.getContextPath() + "/shop.jsp");
     }
 
     // -------------------------------------------------------
-    // Action: CLEAR — Empty the entire cart
+    // CLEAR: Empty entire cart and reset session checkout keys
     // -------------------------------------------------------
     private void handleClear(HttpServletRequest req, HttpServletResponse resp, HttpSession session)
             throws IOException {
 
         session.removeAttribute("cart");
         session.removeAttribute("lastTransactionId");
+        session.removeAttribute("checkoutTotal"); // FIX: was missing before
         resp.sendRedirect(req.getContextPath() + "/shop.jsp");
     }
 
     // -------------------------------------------------------
-    // Action: CHECKOUT — Save transaction to DB, generate invoice
+    // CHECKOUT: Persist cart to DB, redirect to invoice
     // -------------------------------------------------------
     @SuppressWarnings("unchecked")
     private void handleCheckout(HttpServletRequest req, HttpServletResponse resp, HttpSession session)
@@ -161,31 +158,27 @@ public class CartServlet extends HttpServlet {
         User user           = (User) session.getAttribute("loggedInUser");
 
         if (cart == null || cart.isEmpty()) {
-            req.setAttribute("scanError", "Your cart is empty. Please scan items first.");
+            req.setAttribute("scanError", "Your cart is empty. Scan items first.");
             req.getRequestDispatcher("/shop.jsp").forward(req, resp);
             return;
         }
 
-        // Calculate grand total
         double total = 0;
         for (CartItem item : cart) {
             total += item.getLineTotal();
         }
 
-        // Persist transaction to database
         int transactionId = transactionDAO.saveTransaction(user, cart, total);
 
         if (transactionId == -1) {
-            req.setAttribute("scanError", "Checkout failed. Please try again.");
+            req.setAttribute("scanError", "Checkout failed. Please check DB connection and try again.");
             req.getRequestDispatcher("/shop.jsp").forward(req, resp);
             return;
         }
 
-        // Store transaction ID in session for kiosk verification
         session.setAttribute("lastTransactionId", transactionId);
         session.setAttribute("checkoutTotal", total);
 
-        // Redirect to the invoice/receipt page
         resp.sendRedirect(req.getContextPath() + "/invoice.jsp");
     }
 }

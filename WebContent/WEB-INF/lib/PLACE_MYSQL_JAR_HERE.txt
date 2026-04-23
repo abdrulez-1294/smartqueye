@@ -1,0 +1,17 @@
+PLACE YOUR MYSQL CONNECTOR JAR IN THIS FOLDER
+=============================================
+
+Download: https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
+  OR:     https://dev.mysql.com/downloads/connector/j/
+
+File to download: mysql-connector-j-8.x.x.jar
+  (Choose "Platform Independent" ZIP, extract the .jar file)
+
+After placing the JAR here:
+  Eclipse will automatically detect it on the build path
+  (via the org.eclipse.jst.j2ee.internal.web.container classpath entry)
+
+DO NOT place any other JARs here unless needed.
+DO NOT rename the JAR file.
+
+The project will NOT compile without this JAR.

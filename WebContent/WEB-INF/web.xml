@@ -7,7 +7,7 @@
 
     <display-name>SmartQueue</display-name>
 
-    <!-- Default welcome file -->
+    <!-- Welcome file -->
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
@@ -18,9 +18,20 @@
     </session-config>
 
     <!--
-        NOTE: Servlet mappings are handled via @WebServlet annotations
-        in each Servlet class, so no manual servlet entries are needed here.
-        This file is kept minimal for Eclipse Dynamic Web Project compatibility.
+        FIX: Added error pages so users see a friendly page
+        instead of a raw Tomcat stack trace.
     -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/error.jsp</location>
+    </error-page>
+    <error-page>
+        <exception-type>java.lang.Exception</exception-type>
+        <location>/error.jsp</location>
+    </error-page>
 
 </web-app>
