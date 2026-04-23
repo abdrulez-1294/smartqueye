@@ -77,16 +77,22 @@ CREATE TABLE IF NOT EXISTS transaction_items (
 
 -- ============================================================
 -- SEED DATA: Admin user
--- Login: admin@smartqueue.com / admin123
+-- Login: arjun@smartqueue.com / admin@123
 -- ============================================================
 INSERT INTO users (full_name, email, phone, password_hash, role) VALUES
-('Admin User', 'admin@smartqueue.com', '0000000000', 'admin123', 'admin')
+('Arjun Mehta', 'arjun@smartqueue.com', '9000000001', 'admin@123', 'admin')
 ON DUPLICATE KEY UPDATE user_id = user_id;
 
--- SEED DATA: Demo customer
--- Login: john@example.com / pass123   |  Kiosk Phone: 9876543210
+-- SEED DATA: Demo customer 1
+-- Login: rahul.sharma@gmail.com / rahul@123  |  Kiosk Phone: 9876543210
 INSERT INTO users (full_name, email, phone, password_hash, role) VALUES
-('John Doe', 'john@example.com', '9876543210', 'pass123', 'customer')
+('Rahul Sharma', 'rahul.sharma@gmail.com', '9876543210', 'rahul@123', 'customer')
+ON DUPLICATE KEY UPDATE user_id = user_id;
+
+-- SEED DATA: Demo customer 2
+-- Login: priya.patel@gmail.com / priya@123  |  Kiosk Phone: 9123456789
+INSERT INTO users (full_name, email, phone, password_hash, role) VALUES
+('Priya Patel', 'priya.patel@gmail.com', '9123456789', 'priya@123', 'customer')
 ON DUPLICATE KEY UPDATE user_id = user_id;
 
 -- ============================================================
